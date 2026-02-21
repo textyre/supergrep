@@ -1,0 +1,33 @@
+{
+  "name": "codesearch",
+  "version": "0.1.0",
+  "description": "Search GitHub code — CLI + MCP server for agents",
+  "type": "module",
+  "bin": {
+    "codesearch": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^9.4.3",
+    "commander": "^12.0.0",
+    "got": "^14.4.2",
+    "pino": "^9.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.0.0",
+    "nock": "^13.5.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}
