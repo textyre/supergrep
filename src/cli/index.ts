@@ -3,11 +3,11 @@ import { Command } from 'commander'
 import { loadConfig } from '../core/config.js'
 import { SqliteCacheRepository } from '../cache/sqlite.js'
 import { SqliteMetrics } from '../core/metrics.js'
-import { SearchEngine } from '../core/engine.js'
 import { GitHubProvider } from '../providers/github.js'
 import { SourcegraphProvider } from '../providers/sourcegraph.js'
 import { JsonFormatter } from '../results/json.js'
 import { MarkdownFormatter } from '../results/markdown.js'
+import { buildEngine } from '../core/engine-factory.js'
 import type { SearchQuery, SearchResponse, ProviderName } from '../core/types.js'
 
 interface CliDeps {
@@ -148,16 +148,6 @@ export function buildCli(deps: CliDeps = {}): Command {
     })
 
   return program
-}
-
-function buildEngine(): SearchEngine {
-  const cfg = loadConfig()
-  const providers: Partial<Record<ProviderName, InstanceType<typeof GitHubProvider> | InstanceType<typeof SourcegraphProvider>>> = {}
-  if (cfg.githubToken) providers['github'] = new GitHubProvider(cfg.githubToken)
-  providers['sourcegraph'] = new SourcegraphProvider(cfg.sourcegraphUrl, cfg.sourcegraphToken)
-  const cache = new SqliteCacheRepository(cfg.cachePath)
-  const metrics = new SqliteMetrics(cfg.cachePath)
-  return new SearchEngine(providers, cache, metrics, cfg.defaultCacheTTL)
 }
 
 function collect(val: string, prev: string[]): string[] {

@@ -1,25 +1,12 @@
 // src/mcp/handlers.ts
 import got from 'got'
 import { loadConfig } from '../core/config.js'
-import { SearchEngine } from '../core/engine.js'
-import { GitHubProvider } from '../providers/github.js'
-import { SourcegraphProvider } from '../providers/sourcegraph.js'
+import { buildEngine } from '../core/engine-factory.js'
 import { SqliteCacheRepository } from '../cache/sqlite.js'
 import { SqliteMetrics } from '../core/metrics.js'
+import type { SearchEngine } from '../core/engine.js'
 import type { z } from 'zod'
-import type { Provider } from '../providers/base.js'
-import type { ProviderName } from '../core/types.js'
 import type { SearchCodeInput, FetchFileInput, CacheClearInput } from './tools.js'
-
-function buildEngine(): SearchEngine {
-  const cfg = loadConfig()
-  const providers: Partial<Record<ProviderName, Provider>> = {}
-  if (cfg.githubToken) providers['github'] = new GitHubProvider(cfg.githubToken)
-  providers['sourcegraph'] = new SourcegraphProvider(cfg.sourcegraphUrl, cfg.sourcegraphToken)
-  const cache = new SqliteCacheRepository(cfg.cachePath)
-  const metrics = new SqliteMetrics(cfg.cachePath)
-  return new SearchEngine(providers, cache, metrics, cfg.defaultCacheTTL)
-}
 
 // Lazy singleton -- one engine per MCP server process
 let _engine: SearchEngine | undefined
@@ -57,10 +44,13 @@ export async function handleCacheStats(): Promise<string> {
   const cfg = loadConfig()
   const cache = new SqliteCacheRepository(cfg.cachePath)
   const metrics = new SqliteMetrics(cfg.cachePath)
-  const [cacheStats, metricStats] = await Promise.all([cache.stats(), metrics.stats()])
-  cache.close()
-  metrics.close()
-  return JSON.stringify({ cache: cacheStats, metrics: metricStats }, null, 2)
+  try {
+    const [cacheStats, metricStats] = await Promise.all([cache.stats(), metrics.stats()])
+    return JSON.stringify({ cache: cacheStats, metrics: metricStats }, null, 2)
+  } finally {
+    cache.close()
+    metrics.close()
+  }
 }
 
 export async function handleCacheClear(
@@ -68,7 +58,10 @@ export async function handleCacheClear(
 ): Promise<string> {
   const cfg = loadConfig()
   const cache = new SqliteCacheRepository(cfg.cachePath)
-  const deleted = await cache.clear(input.pattern)
-  cache.close()
-  return JSON.stringify({ deleted })
+  try {
+    const deleted = await cache.clear(input.pattern)
+    return JSON.stringify({ deleted })
+  } finally {
+    cache.close()
+  }
 }
