@@ -32,7 +32,7 @@ export class SearchEngine {
           .record({ provider: firstProvider, query: normalized.q, cacheHit: true, results: cached.results.length, elapsedMs: 0 })
           .catch(() => {})
       }
-      return { ...cached, cached: true, elapsed_ms: Date.now() - t0 }
+      return { ...cached, cached: true, elapsed_ms: Date.now() - t0, search_elapsed_ms: cached.elapsed_ms }
     }
     log.debug({ key }, 'cache MISS')
 

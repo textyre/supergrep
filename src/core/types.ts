@@ -45,6 +45,7 @@ export interface SearchResponse {
   total: number
   cached: boolean
   elapsed_ms: number
+  search_elapsed_ms?: number  // original provider search time (set when cached: true)
   errors: ProviderError[]
 }
 
