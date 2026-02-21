@@ -19,7 +19,7 @@ export async function startMcpServer(): Promise<void> {
   const log = createLogger({ level: process.env['LOG_LEVEL'] ?? 'info' })
 
   const server = new Server(
-    { name: 'codesearch', version: '0.1.0' },
+    { name: 'supergrep', version: '0.1.0' },
     { capabilities: { tools: {} } },
   )
 

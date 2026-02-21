@@ -1,5 +1,5 @@
 {
-  "name": "codesearch",
+  "name": "supergrep",
   "version": "0.1.0",
   "engines": {
     "node": ">=20.0.0"
@@ -7,7 +7,7 @@
   "description": "Search GitHub code — CLI + MCP server for agents",
   "type": "module",
   "bin": {
-    "codesearch": "./dist/cli/index.js"
+    "supergrep": "./dist/cli/index.js"
   },
   "scripts": {
     "build": "tsup",

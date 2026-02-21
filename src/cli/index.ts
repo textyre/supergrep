@@ -18,7 +18,7 @@ interface CliDeps {
 export function buildCli(deps: CliDeps = {}): Command {
   const program = new Command()
   program
-    .name('codesearch')
+    .name('supergrep')
     .description('Search GitHub code for agents and subagents')
     .version('0.1.0')
 
