@@ -15,7 +15,7 @@ export interface SearchFilters {
 export interface SearchQuery {
   q: string
   providers: ProviderName[]
-  filters: SearchFilters
+  filters?: SearchFilters
   limit: number
   cacheTTL?: number
 }
@@ -51,7 +51,7 @@ export interface SearchResponse {
 /** Normalize query for deterministic cache key generation */
 export function normalizeQuery(query: SearchQuery): SearchQuery {
   const filters: SearchFilters = {}
-  for (const [k, v] of Object.entries(query.filters)) {
+  for (const [k, v] of Object.entries(query.filters ?? {})) {
     if (v !== undefined) (filters as Record<string, unknown>)[k] = v
   }
   return {
@@ -61,12 +61,15 @@ export function normalizeQuery(query: SearchQuery): SearchQuery {
   }
 }
 
+const VALID_CODES = new Set(['RATE_LIMIT', 'AUTH', 'TIMEOUT', 'UNKNOWN'])
+
 export function isProviderError(value: unknown): value is ProviderError {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    'provider' in value &&
-    'message' in value &&
-    'code' in value
+    typeof v['provider'] === 'string' &&
+    typeof v['message'] === 'string' &&
+    typeof v['code'] === 'string' &&
+    VALID_CODES.has(v['code'])
   )
 }

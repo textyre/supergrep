@@ -22,4 +22,8 @@ describe('isProviderError', () => {
   it('returns false for plain Error', () => {
     expect(isProviderError(new Error('fail'))).toBe(false)
   })
+
+  it('returns false for object with invalid code value', () => {
+    expect(isProviderError({ provider: 'github', message: 'fail', code: 'INVALID' })).toBe(false)
+  })
 })
