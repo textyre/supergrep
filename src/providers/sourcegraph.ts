@@ -70,6 +70,7 @@ export class SourcegraphProvider implements Provider {
         .post(`${this.baseUrl}/.api/graphql`, {
           headers,
           json: { query: GQL_QUERY, variables: { query: sgQuery, patternType } },
+          retry: { limit: 0 },
           timeout: { request: 10_000 },
         })
         .json<GqlResponse>()
@@ -85,12 +86,16 @@ export class SourcegraphProvider implements Provider {
 
   async validate(): Promise<boolean> {
     try {
-      const headers: Record<string, string> = {}
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (this.token) headers['Authorization'] = `token ${this.token}`
-      await got.get(`${this.baseUrl}/.api/graphql`, {
-        headers,
-        timeout: { request: 5_000 },
-      })
+      await got
+        .post(`${this.baseUrl}/.api/graphql`, {
+          headers,
+          json: { query: '{ __typename }' },
+          retry: { limit: 0 },
+          timeout: { request: 5_000 },
+        })
+        .json()
       return true
     } catch {
       return false
@@ -111,7 +116,7 @@ function buildQuery(query: SearchQuery): string {
 
 function normalize(r: FileMatch, baseUrl: string): SearchResult {
   const firstMatch = r.lineMatches[0]
-  const lastMatch = r.lineMatches[r.lineMatches.length - 1] ?? firstMatch
+  const lastMatch = r.lineMatches.at(-1) ?? firstMatch
   const snippet = r.lineMatches.map((m) => m.preview).join('\n')
 
   // Strip "github.com/" prefix from repo name
