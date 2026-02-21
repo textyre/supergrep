@@ -9,7 +9,7 @@ interface GithubCodeItem {
   name: string
   path: string
   html_url: string
-  repository: { full_name: string; stargazers_count: number }
+  repository: { full_name: string }
   text_matches?: Array<{ fragment: string; matches: Array<{ indices: [number, number] }> }>
 }
 
@@ -37,15 +37,18 @@ export class GitHubProvider implements Provider {
           searchParams: { q, per_page: Math.min(query.limit, 100) },
           headers: {
             Authorization: `Bearer ${this.token}`,
-            Accept: 'application/vnd.github+json',
+            Accept: 'application/vnd.github.text-match+json',
             'X-GitHub-Api-Version': '2022-11-28',
-            'X-GitHub-Media-Type': 'github.v3.text-match+json',
           },
           retry: { limit: 0 },
           timeout: { request: 10_000 },
         })
         .json<GithubSearchResponse>()
-      return res.items.map((item) => normalize(item))
+
+      const repoNames = [...new Set(res.items.map((i) => i.repository.full_name))]
+      const starMap = await fetchStarCounts(repoNames, this.token)
+
+      return res.items.map((item) => normalize(item, starMap))
     } catch (err: unknown) {
       throw toProviderError(err)
     }
@@ -55,6 +58,7 @@ export class GitHubProvider implements Provider {
     try {
       await got.get(`${BASE}/user`, {
         headers: { Authorization: `Bearer ${this.token}` },
+        retry: { limit: 0 },
         timeout: { request: 5_000 },
       })
       return true
@@ -62,6 +66,31 @@ export class GitHubProvider implements Provider {
       return false
     }
   }
+}
+
+async function fetchStarCounts(repos: string[], token: string): Promise<Map<string, number>> {
+  if (repos.length === 0) return new Map()
+  const settled = await Promise.allSettled(
+    repos.map((repo) =>
+      got
+        .get(`${BASE}/repos/${repo}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+          retry: { limit: 0 },
+          timeout: { request: 5_000 },
+        })
+        .json<{ stargazers_count: number }>()
+        .then((data) => [repo, data.stargazers_count] as const)
+    )
+  )
+  const map = new Map<string, number>()
+  for (const r of settled) {
+    if (r.status === 'fulfilled') map.set(r.value[0], r.value[1])
+  }
+  return map
 }
 
 function buildQuery(query: SearchQuery): string {
@@ -76,15 +105,15 @@ function buildQuery(query: SearchQuery): string {
   return parts.join(' ')
 }
 
-function normalize(item: GithubCodeItem): SearchResult {
+function normalize(item: GithubCodeItem, starMap: Map<string, number>): SearchResult {
   const firstMatch = item.text_matches?.[0]
   const fragment = firstMatch?.fragment ?? ''
   const hasMatch = (firstMatch?.matches?.length ?? 0) > 0
   const lineCount = fragment.split('\n').length
 
-  const parts = item.repository.full_name.split('/')
-  const owner = parts[0] ?? ''
-  const repoName = parts[1] ?? ''
+  const slash = item.repository.full_name.indexOf('/')
+  const owner = item.repository.full_name.slice(0, slash)
+  const repoName = item.repository.full_name.slice(slash + 1)
   const rawUrl = `https://raw.githubusercontent.com/${owner}/${repoName}/HEAD/${item.path}`
 
   return {
@@ -95,7 +124,7 @@ function normalize(item: GithubCodeItem): SearchResult {
     lines: [1, Math.max(1, lineCount)],
     snippet: fragment || item.name,
     language: item.path.split('.').pop() ?? 'unknown',
-    stars: item.repository.stargazers_count,
+    stars: starMap.get(item.repository.full_name) ?? 0,
     provider: 'github',
     score: hasMatch ? 1.0 : 0.5,
   }
