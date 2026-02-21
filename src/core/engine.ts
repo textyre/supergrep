@@ -43,6 +43,20 @@ export class SearchEngine {
 
     log.info({ q: normalized.q, providers: normalized.providers }, 'search request')
 
+    // 3a. Early exit if no providers are configured
+    if (activeProviders.length === 0) {
+      const msg = `No active providers for [${normalized.providers.join(', ')}]. Set GITHUB_TOKEN in .env or environment.`
+      log.error({ providers: normalized.providers }, msg)
+      return {
+        query: normalized,
+        results: [],
+        total: 0,
+        cached: false,
+        elapsed_ms: Date.now() - t0,
+        errors: [{ provider: normalized.providers[0] ?? 'github', message: msg, code: 'NO_PROVIDER' }],
+      }
+    }
+
     // 3. Fan-out in parallel (fault-tolerant)
     const settlements = await Promise.allSettled(
       activeProviders.map((p) => p.search(normalized)),

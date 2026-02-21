@@ -154,8 +154,13 @@ function collect(val: string, prev: string[]): string[] {
   return [...prev, val]
 }
 
-// Direct entrypoint - only runs when file is executed directly
-const isMain = process.argv[1]?.endsWith('index.js') || process.argv[1]?.endsWith('index.ts')
+// Direct entrypoint - runs when executed as script or via bin symlink
+const argv1 = process.argv[1] ?? ''
+const isMain =
+  argv1.endsWith('index.js') ||
+  argv1.endsWith('index.ts') ||
+  argv1.endsWith('/supergrep') ||
+  argv1.endsWith('/supergrep.js')
 if (isMain) {
   const program = buildCli()
   program.parseAsync(process.argv).catch((e: unknown) => {

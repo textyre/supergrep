@@ -1,5 +1,26 @@
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
+
+// Load .env from package root into process.env (does not override existing vars)
+function loadEnvFile(): void {
+  const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+  try {
+    const content = readFileSync(join(pkgRoot, '.env'), 'utf8')
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const eq = trimmed.indexOf('=')
+      if (eq === -1) continue
+      const key = trimmed.slice(0, eq).trim()
+      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '')
+      if (key && process.env[key] === undefined) process.env[key] = val
+    }
+  } catch { /* .env not found, skip */ }
+}
+
+loadEnvFile()
 
 export interface Config {
   githubToken: string | undefined

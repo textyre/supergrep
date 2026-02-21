@@ -36,7 +36,7 @@ export interface SearchResult {
 export interface ProviderError {
   provider: ProviderName
   message: string
-  code: 'RATE_LIMIT' | 'AUTH' | 'TIMEOUT' | 'UNKNOWN'
+  code: 'RATE_LIMIT' | 'AUTH' | 'TIMEOUT' | 'UNKNOWN' | 'NO_PROVIDER'
 }
 
 export interface SearchResponse {
@@ -62,7 +62,7 @@ export function normalizeQuery(query: SearchQuery): SearchQuery {
   }
 }
 
-const VALID_CODES = new Set(['RATE_LIMIT', 'AUTH', 'TIMEOUT', 'UNKNOWN'])
+const VALID_CODES = new Set(['RATE_LIMIT', 'AUTH', 'TIMEOUT', 'UNKNOWN', 'NO_PROVIDER'])
 
 export function isProviderError(value: unknown): value is ProviderError {
   if (typeof value !== 'object' || value === null) return false

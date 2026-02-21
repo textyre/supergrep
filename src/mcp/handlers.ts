@@ -27,6 +27,7 @@ export async function handleSearchCode(
       repo: input.repo,
       org: input.org,
       path: input.path,
+      filename: input.filename,
       regex: input.regex,
     },
     limit: input.limit ?? 20,
